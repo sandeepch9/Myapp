@@ -1,0 +1,48 @@
+trigger:
+- none
+
+pool:
+  vmImage: ubuntu-latest
+variables:
+  - name: ArtifactsBasePath
+    value: $(Pipeline.Workspace)/BuildPipeline/drop
+
+steps:
+- task: AzureResourceManagerTemplateDeployment@3
+  displayName: Create Azure WebApp Service
+  inputs:
+    deploymentScope: 'Resource Group'
+    azureResourceManagerConnection: 'artice-sc'
+    subscriptionId: '586135d7-5989-40cd-ae97-47c4d1f0e7c2'
+    action: 'Create Or Update Resource Group'
+    resourceGroupName: 'article-new-rg'
+    location: 'Central India'
+    templateLocation: 'Linked artifact'
+    csmFile: 'AppSvcdeployment.json'
+    csmParametersFile: 'AppSvcdeployment.parameters.json'
+    deploymentMode: 'Incremental'
+
+- task: AzureResourceManagerTemplateDeployment@3
+  displayName: Deploy Azure KV
+  inputs:
+    deploymentScope: 'Resource Group'
+    azureResourceManagerConnection: 'artice-sc'
+    subscriptionId: '586135d7-5989-40cd-ae97-47c4d1f0e7c2'
+    action: 'Create Or Update Resource Group'
+    resourceGroupName: 'article-new-rg'
+    location: 'Central India'
+    templateLocation: 'Linked artifact'
+    csmFile: 'KVdeployment.json'
+    csmParametersFile: 'KVdeployment.parameters.json'
+    deploymentMode: 'Incremental'
+
+- task: AzurePowerShell@5
+  displayName: Assign Permission to App Service
+  inputs:
+    azureSubscription: 'artice-sc'
+    ScriptType: 'InlineScript'
+    Inline: |
+      $output = (Get-AzWebApp -Name myarticlewebapp -ResourceGroupName article-new-rg).Identity.PrincipalId
+      Write-Host "The WebApp PrincipalId is: $output"
+      Set-AzKeyVaultAccessPolicy -VaultName articlekvnew -ObjectId $output -PermissionsToSecrets Get,List -BypassObjectIdValidation
+    azurePowerShellVersion: 'LatestVersion'

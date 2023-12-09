@@ -1,0 +1,99 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ASP_name": {
+            "minLength": 1,
+            "type": "String"
+        },
+        "webappname": {
+            "minLength": 1,
+            "type": "String"
+        },
+        "ASP_SKU": {
+            "allowedValues": [
+                "Free",
+                "Shared",
+                "Basic",
+                "Standard"
+            ],
+            "type": "String"
+        },
+        "ASPWorkerSize": {
+            "allowedValues": [
+                "0",
+                "1",
+                "2"
+            ],
+            "type": "String"
+        }
+    },
+    "variables": {
+        "webappname": "[concat('Samplewebapp', uniqueString(resourceGroup().id))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2014-06-01",
+            "name": "[parameters('ASP_name')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [],
+            "tags": {
+                "displayName": "ASP"
+            },
+            "properties": {
+                "name": "[parameters('ASP_name')]",
+                "sku": "[parameters('ASP_SKU')]",
+                "workerSize": "[parameters('ASPWorkerSize')]",
+                "numberOfWorkers": 1
+            }
+        },     
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2015-08-01",
+            "name": "[parameters('webappname')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Web/serverfarms/', parameters('ASP_name'))]"
+            ],
+            "tags": {
+                "[concat('hidden-related:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('ASP_name'))]": "Resource",
+                "displayName": "WebAppName"
+            },
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "name": "[parameters('webappname')]",
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms/', parameters('ASP_name'))]"
+            },
+            "resources": [
+                {
+                    "type": "config",
+                    "apiVersion": "2014-11-01",
+                    "name": "appsettings",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/Sites', parameters('webappname'))]"
+                    ],
+                    "properties": {
+                        "AppSettingKey1": "Some value",
+                        "FromMessage": "@Microsoft.KeyVault(SecretUri=https://articlekvnew.vault.azure.net/secrets/trialsecret/)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/slots",
+            "apiVersion": "2015-08-01",
+            "name": "[concat(parameters('webappname'), '/staging')]",
+            "location": "[resourceGroup().location]",
+            "comments": "This specifies the web app slots.",
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms/', parameters('ASP_name'))]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('webappname'))]"
+            ]  
+        }        
+    ]
+}

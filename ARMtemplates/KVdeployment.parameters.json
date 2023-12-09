@@ -1,0 +1,26 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "keyVaultName": {
+            "value": "articlekvnew"
+        },
+        "skuName": {
+            "value": "Standard"
+        },
+        "objectId": {
+            "value": "dc1cfbf7-89bf-487b-9415-e713ec31d677"
+        },
+        "secretsPermissions": {
+            "value": [
+                "get","list"
+            ]
+        },
+        "secretName": {
+            "value": "trialsecret"
+        },
+        "secretValue": {
+            "value": "Passing_Secret_from_KV"
+        }
+    }
+}
